@@ -1,5 +1,8 @@
 from pip._vendor.certifi.__main__ import args
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, DjangoModelPermissions
 from rest_framework.response import Response
 from .serializers import PontoTuristicoSerializer
 from rest_framework.viewsets import ModelViewSet
@@ -10,9 +13,24 @@ class PontoTuristicoViewSet(ModelViewSet):
     #queryset = PontoTuristico.objects.all(aprovado=True)
 
     serializer_class = PontoTuristicoSerializer
+    #permission_classes = (IsAuthenticated)
+    authentication_classes = (TokenAuthentication)
+    #permission_classes = (IsAdminUser)
+    permission_classes = (DjangoModelPermissions)
 
     def get_queryset(self):
-        return PontoTuristico.objects.filter(aprovado=True)
+        id = self.request.query_params.get('id', None)
+        nome = self.request.query_params.get('nome', None)
+        descricao = self.request.query_params.get('descricao', None)
+        if id:
+            queryset = PontoTuristico.objects.filter(pk=id)
+        if nome:
+            queryset = queryset.filter(nome=nome)
+        if descricao:
+            queryset = queryset.filter(descricao=descricao)
+        return queryset
+
+#return PontoTuristico.objects.filter(aprovado=True)
 
     def list(self, request, *arg, **kwargs):
         return super(PontoTuristicoViewSet, self).list(request, *args, **kwargs)
@@ -39,3 +57,7 @@ class PontoTuristicoViewSet(ModelViewSet):
     @action(methods=['get'], detail=False)
     def teste(self, request):
         pass
+
+    filter_backends = (SearchFilter)
+    search_fields = ('nome','descricao','endereco__linha1')
+    lookup_field = 'nome'
